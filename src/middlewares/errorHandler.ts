@@ -1,16 +1,13 @@
-import { Request, Response, NextFunction } from "express"
-import AppError from "../utils/appError"
+import type { ErrorRequestHandler, RequestHandler } from "express";
+import { StatusCodes } from "http-status-codes";
 
-function errorHandler(err: AppError, req: Request, res: Response, next: NextFunction) {  
-  const statusCode = err.statusCode || 500
+const unexpectedRequest: RequestHandler = (_req, res) => {
+  res.sendStatus(StatusCodes.NOT_FOUND);
+};
 
-  console.error("ERROR", err);
+const addErrorToRequestLog: ErrorRequestHandler = (err, _req, res, next) => {
+  res.locals.err = err;
+  next(err);
+};
 
-  // Respond to client
-  res.status(statusCode).json({
-    statusCode: statusCode,
-    message: err.message || "Something went wrong!",
-  })
-}
-
-export default errorHandler
+export default () => [unexpectedRequest, addErrorToRequestLog];

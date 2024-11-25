@@ -1,19 +1,22 @@
-import express, { urlencoded, json } from "express"
+import express, { urlencoded, json, type Express  } from "express"
 import cors from 'cors'
 import errorHandler from './middlewares/errorHandler'
 import limiter from "./middlewares/rateLimit"
 import malier from './utils/mailer'
 import dotenv from 'dotenv'
+import { authRouter } from "./routers"
 
 dotenv.config()
 
-const app = express()
+const app: Express = express()
 
 app.use(limiter)
 app.use(cors())
 app.use(urlencoded({ extended: true }))
 app.use(json())
-app.use(errorHandler)
+// app.use(errorHandler)
+
+app.use('/api/v1', authRouter)
 
 app.get('/', (req,res) => {
   res.send('hello world')
