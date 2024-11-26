@@ -1,8 +1,7 @@
 import express, { urlencoded, json, type Express  } from "express"
 import cors from 'cors'
-// import errorHandler from './middlewares/errorHandler'
 import limiter from "./middlewares/rateLimit"
-import malier from './utils/mailer'
+// import malier from './utils/mailer'
 import dotenv from 'dotenv'
 import authRouter from "@/routers/auth"
 import productRouter from "@/routers/product"
@@ -15,7 +14,6 @@ app.use(limiter)
 app.use(cors())
 app.use(urlencoded({ extended: true }))
 app.use(json())
-// app.use(errorHandler)
 
 app.use('/api/v1', authRouter)
 app.use('/api/v1/product', productRouter)
