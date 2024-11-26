@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
+import { successResponse, errorResponse } from "@/utils/response"
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import { getUserByUsername, checkExistUser, insertUserData } from '@/services/auth'
@@ -12,12 +13,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     const user = await getUserByUsername(username)
 
     if (!user) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        { 
-          status: 'fail',
-          message: 'Invalid username or password' 
-        })
-      return 
+      return errorResponse(res, StatusCodes.BAD_GATEWAY, 'Invalid username or password.') 
     }
 
     const storedPassword = user.password
@@ -25,26 +21,18 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     const isPasswordValid = await bcrypt.compare(password, storedPassword)
 
     if (!isPasswordValid) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        { 
-          status: 'fail',
-          message: 'Invalid username or password' 
-        })
-      return 
+      return errorResponse(res, StatusCodes.BAD_GATEWAY, 'Invalid username or password.') 
     }
     
     const token = jwt.sign({ username: user.username, userId: user.id, email: user.email, roleId: user.role_id }, process.env.JWT_SECRET as string, {
       expiresIn: "1h"
     })
 
-    res.status(StatusCodes.OK).json({ status: 'success', message: 'Login successful', token: token })
+    return successResponse(res, StatusCodes.OK,'Logedin successfully.', { token: token })
 
   } catch (error) {
     console.error(error)
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      status: 'fail',
-      message: 'Something went wrong'
-    })
+    errorResponse(res, StatusCodes.BAD_GATEWAY, 'Internal Server Error.')
   }
 };
 
@@ -55,24 +43,14 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     const existUser = await checkExistUser(username, email)
 
     if (existUser) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        { 
-          status: 'fail',
-          message: 'This username or email already exists in the system.'
-        })
-      return 
+      return errorResponse(res, StatusCodes.BAD_REQUEST, 'This username or email already exists in the system.') 
     }
-    await insertUserData(username, email, password, firstname, lastname, phonenumber);
+    await insertUserData(username, email, password, firstname, lastname, phonenumber)
     
-    res.status(StatusCodes.CREATED).json({
-      status: 'success',
-      message: 'Registered successfully.'
-    });
+    successResponse(res, StatusCodes.CREATED,'Registered successfully.')
 
   } catch (error) {
-    console.error(error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      status: 'fail',
-      message: 'Something went wrong.' });
+    console.error(error)
+    errorResponse(res, StatusCodes.BAD_GATEWAY, 'Internal Server Error.')
   }
 }
