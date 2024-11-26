@@ -1,71 +1,78 @@
 import { Request, Response } from 'express'
+import { StatusCodes } from 'http-status-codes'
 import jwt from 'jsonwebtoken'
-import pool from '@/utils/database';
 import bcrypt from 'bcrypt'
+import { getUserByUsername, checkExistUser, insertUserData } from '@/services/auth'
 
-export const loginUser = async (req: Request, res: Response):Promise<any> => {
+
+export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password } = req.body
 
-    const { rows } = await pool.query('SELECT * FROM users WHERE username = $1', [username])
+    const user = await getUserByUsername(username)
 
-    if (rows.length === 0) {
-      return res.status(401).json({ message: 'Invalid username or password' })
+    if (!user) {
+      res.status(StatusCodes.BAD_REQUEST).json(
+        { 
+          status: 'fail',
+          message: 'Invalid username or password' 
+        })
+      return 
     }
-
-    const user = rows[0]
 
     const storedPassword = user.password
 
     const isPasswordValid = await bcrypt.compare(password, storedPassword)
 
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid username or password' })
+      res.status(StatusCodes.BAD_REQUEST).json(
+        { 
+          status: 'fail',
+          message: 'Invalid username or password' 
+        })
+      return 
     }
-    const token = jwt.sign({ username: user.username, userId: user.id, email: user.email, role: user.role_code }, process.env.JWT_SECRET as string, {
+    
+    const token = jwt.sign({ username: user.username, userId: user.id, email: user.email, roleId: user.role_id }, process.env.JWT_SECRET as string, {
       expiresIn: "1h"
     })
 
-    res.status(200).json({ message: 'Login successful', token: token })
+    res.status(StatusCodes.OK).json({ status: 'success', message: 'Login successful', token: token })
 
   } catch (error) {
     console.error(error)
-    res.status(500).json({ message: 'Something went wrong' })
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      status: 'fail',
+      message: 'Something went wrong'
+    })
   }
 };
 
-export const registerUser = async (req: Request, res: Response) => {  
+export const registerUser = async (req: Request, res: Response): Promise<void> => {  
   try {
-    const { username, email, password, name, lastname, phonenumber } = req.body;
+    const { username, email, password, firstname, lastname, phonenumber } = req.body
+    
+    const existUser = await checkExistUser(username, email)
 
-    const { rows } = await pool.query(
-      'SELECT * FROM users WHERE username = $1 OR email = $2',
-      [username, email]
-    );
-
-    if (rows.length > 0) {
-      res.status(400).json({
-        status: 'fail',
-        message: 'This username or email already exists in the system.'
-      });
+    if (existUser) {
+      res.status(StatusCodes.BAD_REQUEST).json(
+        { 
+          status: 'fail',
+          message: 'This username or email already exists in the system.'
+        })
       return 
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await pool.query(
-      'INSERT INTO users (username, email, password, name, lastname, phonenumber) VALUES ($1, $2, $3, $4, $5, $6)',
-      [username, email, hashedPassword, name, lastname, phonenumber]
-    );
-
-
-    res.status(201).json({
+    await insertUserData(username, email, password, firstname, lastname, phonenumber);
+    
+    res.status(StatusCodes.CREATED).json({
       status: 'success',
       message: 'Registered successfully.'
     });
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Something went wrong.' });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      status: 'fail',
+      message: 'Something went wrong.' });
   }
 }
