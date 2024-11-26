@@ -10,8 +10,8 @@ const router = Router();
 // Route for user registration
 router.get('/', verifyToken, getProducts)
 router.get('/:id', verifyToken, getProductByIdHandler)
-router.post('/add', verifyToken, validateData(productList), checkPermission('Write'), addProducts)
-router.put('/:id', verifyToken, validateData(productItem), checkPermission('Write'), editProduct)
-router.delete('/:id', verifyToken, checkPermission('Delete'), deleteProduct)
+router.post('/add', verifyToken, validateData(productList), checkPermission('write'), addProducts)
+router.put('/:id', verifyToken, validateData(productItem), checkPermission('write'), editProduct)
+router.delete('/:id', verifyToken, checkPermission('delete'), deleteProduct)
 
 export default router

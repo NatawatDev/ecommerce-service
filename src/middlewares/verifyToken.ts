@@ -2,28 +2,31 @@ import jwt, { Secret, JwtPayload } from 'jsonwebtoken'
 import { Request, Response, NextFunction } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { errorResponse } from "@/utils/response"
-import { getTokenFromRequest } from '@/utils/auth/jwtUtils'
+import dotenv from 'dotenv'
 
-export interface CustomRequest extends Request {
-  token: string | JwtPayload
-}
+dotenv.config()
 
-async function verifyToken(req: Request, res: Response, next: NextFunction){
+async function verifyToken(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const SECRET_KEY: Secret = process.env.JWT_SECRET || ''
     
-    const token = getTokenFromRequest(req)
-
-    const verify = jwt.verify(token as string, SECRET_KEY)
     
-    if (!token || !verify) {
-      errorResponse(res, StatusCodes.UNAUTHORIZED,'Please authenticate')
-    }        
+    const token = req.headers.authorization?.split(' ')[1]
+    
+    
+    if (!token) {
+      return errorResponse(res, StatusCodes.UNAUTHORIZED, 'Please authenticate');
+    }
+
+    
+    const decoded = jwt.verify(token, SECRET_KEY) as JwtPayload;
+    req.user = decoded
+
     next()
   } catch (err) {
-    console.log(err)
-    errorResponse(res, StatusCodes.UNAUTHORIZED,'Please authenticate')
+    console.error(err);
+    return errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Internal server error.');
   }
 }
 
-export default verifyToken
+export default verifyToken;
