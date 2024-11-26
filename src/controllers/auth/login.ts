@@ -10,7 +10,7 @@ export const loginUser = async (req: Request, res: Response) => {
     const { rows } = await pool.query('SELECT * FROM users WHERE username = $1', [username])
 
     if (rows.length === 0) {
-      return res.status(401).json({ message: 'Invalid username or password' })
+      return res.status(400).json({ message: 'Invalid username or password' })
     }
 
     const user = rows[0]
@@ -20,7 +20,7 @@ export const loginUser = async (req: Request, res: Response) => {
     const isPasswordValid = await bcrypt.compare(password, storedPassword)
 
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid username or password' })
+      return res.status(400).json({ message: 'Invalid username or password' })
     }
     const token = jwt.sign({ username: user.username, userId: user.id, email: user.email, role: user.role_code }, process.env.JWT_SECRET as string, {
       expiresIn: "1h"
