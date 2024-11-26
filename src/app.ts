@@ -4,7 +4,8 @@ import errorHandler from './middlewares/errorHandler'
 import limiter from "./middlewares/rateLimit"
 import malier from './utils/mailer'
 import dotenv from 'dotenv'
-import { authRouter } from "./routers"
+import authRouter from "@/routers/auth"
+import productRouter from "@/routers/product"
 
 dotenv.config()
 
@@ -17,6 +18,7 @@ app.use(json())
 // app.use(errorHandler)
 
 app.use('/api/v1', authRouter)
+app.use('/api/v1/products', productRouter)
 
 app.get('/', (req,res) => {
   res.send('hello world')
