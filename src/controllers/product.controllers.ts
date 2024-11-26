@@ -13,7 +13,10 @@ import {
 
 export const getProducts = async (req: Request, res: Response): Promise<void> => {
   try {
-    const productList = await getProductList()
+    const limit = parseInt(req.query.limit as string)
+    const offset = parseInt(req.query.offset as string)
+
+    const productList = await getProductList(limit, offset)
 
     if (!productList) {
       return errorResponse(res, StatusCodes.BAD_GATEWAY, 'Not found products.') 
@@ -47,12 +50,13 @@ export const getProductByIdHandler  = async (req: Request, res: Response): Promi
 
 export const addProducts = async (req: Request, res: Response): Promise<void> => {
   try {
+    const user = req.user
     const { productList } = req.body
 
     if (productList.length === 0) {
       return errorResponse(res, StatusCodes.BAD_REQUEST, 'Not found products.')      
     }
-    await addProductList(productList)
+    await addProductList(productList, user?.email)
     return successResponse(res, StatusCodes.OK, 'Added new products successfuly.', { products: productList })
     
   } catch (error) {
@@ -63,15 +67,17 @@ export const addProducts = async (req: Request, res: Response): Promise<void> =>
 
 export const editProduct = async (req: Request, res: Response): Promise<void> => {
   try {
+    const user = req.user
     const product = req.body
     const productId = req.params.id
+   
 
     const existProduct = await checkExistProduct(productId)
 
     if (!existProduct) {
       return errorResponse(res, StatusCodes.BAD_REQUEST, 'Product not found')
     }     
-    await editProductById(productId, product)
+    await editProductById(productId, product, user?.email)
     return successResponse(res, StatusCodes.OK, 'Edited product successfuly.') 
     
   } catch (error) {
